@@ -16,6 +16,8 @@ from datetime import datetime
 from PIL import ImageTk, Image as IMG
 
 import os
+
+#global lblImagen
 #Convierte el formato de video opencv al entorno TK
 def convertirTk(miImagen):
     laImagen = cv2.cvtColor(miImagen, cv2.COLOR_BGR2RGB)
@@ -30,7 +32,7 @@ def puntoMedio(ptA, ptB):
 # La función permite interactuar con un cuadro de dialogo para abrir una imagen
 archivoImagen: any
 #Abre un archivo con extención jpg
-Vmadre="1024x800"
+Vmadre="600x480"
 Vhija="600x480"
 root = Tk()
 imagen=""
@@ -68,12 +70,16 @@ def capturarImagen():
         video = cv2.VideoCapture(1)
     video=cv2.VideoCapture(1)
     #medidas de la pantalla
-    alto=1024
+    global alto
+    alto = 1024
     ancho=800
     #longitud de la líneas del objetivo
-    longitud=400
-    calibracion2mmP1=int(ancho / 1.2)
-    calibracion2mmP2=int(ancho / 3.3)
+    global longitud
+    longitud = 400
+    global calibracion2mmP1
+    calibracion2mmP1 = int(ancho / 1.2)
+    global calibracion2mmP2
+    calibracion2mmP2 = int(ancho / 3.3)
 
     while(True):
         aux,captura=video.read()
@@ -81,9 +87,7 @@ def capturarImagen():
         #
          #   print("Ok ")
         if cv2.waitKey(1) & 0xFF == ord('x'):
-            cv2.line(captura, (int(alto / 3) + int(alto / 2), calibracion2mmP1 - longitud),
-                     (int(alto / 3) + int(alto / 2), calibracion2mmP2 + longitud),
-                     (128, 0, 0), 1, 1, 1)
+
             cv2.imwrite("Foto10.jpg", captura)
             break
 
@@ -99,10 +103,14 @@ def capturarImagen():
         # Línea de referencia
         cv2.line(captura, (int(alto / 3)+int(alto / 2), int(ancho / 1.3) - longitud), (int(alto / 3)+int(alto / 2), int(ancho / 3.2) + longitud),
                  (255,0 , 0), 1, 1, 1)
-
+        cv2.line(captura, (int(alto / 3) + int(alto / 2), calibracion2mmP1 - longitud),
+                 (int(alto / 3) + int(alto / 2), calibracion2mmP2 + longitud),
+                 (128, 0, 0), 1, 1, 1)
                 #cv2.circle(captura,(300,240),100,(127,127,127),8)
         #cImagenTK(captura)
-
+        lblImagen.configure(image=resolucion)
+        lblImagen.image=resolucion
+        #lblImagen.after(10)
         cv2.imshow("foto", captura)
 
         #cv2.createButton("Back",back,None,cv2.QT_PUSH_BUTTON,0)
@@ -129,9 +137,12 @@ def abrirArchivo():
 def obtenerNArchivo():
     ref = os.path.split(imagen)
     return ref[1]
+
 def procesarImagen():
     miImagen = cv2.imread(imagen)
-
+    cv2.line(miImagen, (int(alto / 3) + int(alto / 2), calibracion2mmP1 - longitud),
+             (int(alto / 3) + int(alto / 2), calibracion2mmP2 + longitud),
+             (128, 0, 0), 1, 1, 1)
     # Se convierte en  gris la imagen y se desenfoca
     imGris = cv2.cvtColor(miImagen, cv2.COLOR_BGR2GRAY)
     #cv2.imshow("Imagen en gris",imGris)
@@ -229,16 +240,20 @@ def procesarImagen():
         cv2.imwrite(refinal, orig)
         construirPDF(refinal)
         cv2.waitKey(0)
+def retirarExtension(archivoI):
+    arc = archivoI.split(sep=".", maxsplit=2)
+    return arc[0]
+
 def construirPDF(img):
     #Tamaño carta
     anchoCarta,altoCarta=letter
     Titulo="Reporte"
     Mreal="Medida real"
-    Mcalculado="Medida cálculado"
-    HMinima="Grosor mínimo: "
-    HMaxima = "Grosor máximo: "
-    DMinima = "Diámetro mínimo: "
-    DMaximo = "Diámetro máximo: "
+    Mcalculado="Medida cálculado "
+    HMinima=   "Grosor mínimo:   "
+    HMaxima =  "Grosor máximo:   "
+    DMinima =  "Diámetro mínimo: "
+    DMaximo =  "Diámetro máximo: "
     wImagen=440
     hImagen=320
     x0=50
@@ -246,6 +261,20 @@ def construirPDF(img):
     x3=300
     y1=50
     TxtSeparacion=30
+
+    nimagen =retirarExtension(obtenerNArchivo())
+    if (nimagen[0]!="#"):
+        HMi=0.0
+        HMa=0.0
+        DMi=0.0
+        DMa=0.0
+    else:
+        HMi=float(nimagen[7:10])/100
+        HMa=float(nimagen[3:6])/100
+        DMi=float(nimagen[15:18])/100
+        DMa=float(nimagen[11:14])/100
+
+
     doc='./Resultados/Documento'+datetime.today().strftime('%y%m%d%H%M')+'.pdf'
     documento=canvas.Canvas(doc, pagesize=letter)
     documento.drawString(x1, altoCarta-y1, Titulo)
@@ -260,39 +289,45 @@ def construirPDF(img):
     documento.drawString(x0, altoCarta-y1-wImagen-TxtSeparacion*5, DMaximo)
 
     #Reporte de la medida de comparación
+
     documento.drawString(x3, altoCarta - y1 - wImagen - TxtSeparacion, Mreal)
-    documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*2, HMinima)
-    documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*3, HMaxima)
-    documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*4, DMinima)
-    documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*5, DMaximo)
+    documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*2, HMinima+str(HMi)+" mm")
+    documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*3, HMaxima+str(HMa)+" mm")
+    documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*4, DMinima+str(DMi)+" mm")
+    documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*5, DMaximo+str(DMa)+" mm")
 #Salva el documento
     documento.save()
+
     #abrir el navegador
    # webbrowser.open_new(doc)
 
-def construirEntorno():
-    menu = Menu(root)
-    root.config(menu=menu)
-    root.geometry(Vmadre)
-    root.title("Análisis de imagenes")
-    #Genera los menus de la aplicación
-    amenu = Menu(menu)
-    menu.add_cascade(label='Archivo', menu=amenu)
-    amenu.add_command(label='Capturar...',command=capturarImagen)
-    amenu.add_command(label='Abrir...', command=abrirArchivo)
-    amenu.add_separator()
-    amenu.add_command(label='Salir', command=root.quit)
-    procesarmenu = Menu(menu)
-    menu.add_cascade(label='Procesar', menu=procesarmenu)
-    procesarmenu.add_command(label='Medir',command=procesarImagen)
-    procesarmenu.add_command(label='Cambiar de cámara',command=cambioDeCamara)
-    helpmenu = Menu(menu)
-    menu.add_cascade(label='Ayuda', menu=helpmenu)
-    helpmenu.add_command(label='Acerca de ..')
+
+menu = Menu(root)
+root.config(menu=menu)
+root.geometry(Vmadre)
+root.title("Análisis de imagenes")
+#Genera los menus de la aplicación
+amenu = Menu(menu)
+menu.add_cascade(label='Archivo', menu=amenu)
+amenu.add_command(label='Capturar...',command=capturarImagen)
+amenu.add_command(label='Abrir...', command=abrirArchivo)
+amenu.add_separator()
+amenu.add_command(label='Salir', command=root.quit)
+procesarmenu = Menu(menu)
+menu.add_cascade(label='Procesar', menu=procesarmenu)
+procesarmenu.add_command(label='Medir',command=procesarImagen)
+procesarmenu.add_command(label='Cambiar de cámara',command=cambioDeCamara)
+helpmenu = Menu(menu)
+menu.add_cascade(label='Ayuda', menu=helpmenu)
+helpmenu.add_command(label='Acerca de ..')
+#Genera el boton de captura
+btnCapturar=Button(root,text="Capturar",width=30,command=capturarImagen)
+btnCapturar.grid(column=0,row=0,padx=5,pady=5)
+lblImagen=Label(root)
+lblImagen.grid(column=0,row=1,columnspan=2)
+
+menu.mainloop()
 
 
-    menu.mainloop()
 
-
-construirEntorno()
 
