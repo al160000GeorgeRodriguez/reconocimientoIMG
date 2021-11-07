@@ -10,10 +10,12 @@ from imutils import perspective
 import numpy as np
 import argparse 
 import imutils
+from time import time
 import cv2
 from tkinter import *
 from datetime import datetime
-
+from tkinter import messagebox as mb
+from tkinter import filedialog as fd
 from PIL import ImageTk, Image as IMG
 
 import os
@@ -38,7 +40,8 @@ Vhija="600x480"
 root = Tk()
 imagen=""
 camara=0
-
+tiempoCaptura=0.0
+tiempoProcesamiento = 0.0
 def cambioDeCamara():
     global camara
     camara=not(camara)
@@ -70,40 +73,52 @@ ancho=800
 global calibracion2mmP1
 global calibracion2mmP2
 global longitud
-longitud = 390
+longitud = 310
+
 calibracion2mmP1 = int(ancho / 1.2)
 calibracion2mmP2 = int(ancho / 3.3)
 
 
 
 def capturarImagen():
-    global camara
+    global camara, alto, ancho, tiempoCaptura
+    tiempoCaptura=time()
     def back():
         video = cv2.VideoCapture(1)
     video=cv2.VideoCapture(1)
 
-
-
+    ubicacionX = int( alto / 6)
+    ubicacionY = int(ancho / 10)
+    diferencia = int(ancho / 10 - ancho / 11)
+    # (int(alto / 3) + int(alto / 2)+ int(alto / 4)
+    puntoUno = (calibracion2mmP1 - longitud - 250, ubicacionY - diferencia)
+    puntoDos = (calibracion2mmP2 + longitud - 250, ubicacionY)
+    colorRectangulo = (0, 0, 0)
     #longitud de la líneas del objetivo
 
 
 
-    imgx = Toplevel(root)
-    btnCapturar = Button(imgx, text="Capturar", width=10)
-    btnCapturar.grid(column=0, row=0, padx=3, pady=5)
-    imgx.title("Captura...")
-    imgx.geometry(Vhija)
+   # imgx = Toplevel(root)
+    #btnCapturar = Button(imgx, text="Capturar", width=10)
+    #btnCapturar.grid(column=0, row=0, padx=3, pady=5)
+    #imgx.title("Captura...")
+    #imgx.geometry(Vhija)
     #lblIma = Label(imgx)
-
+    global imagen
     while(True):
         aux,captura=video.read()
        # if aux==True:
         #
          #   print("Ok ")
         if cv2.waitKey(1) & 0xFF == ord('x'):
-
-            cv2.imwrite("Foto10.jpg", captura)
-            break
+            nombrearch = fd.asksaveasfilename(initialdir="./Prueba/", title="Guardar como",filetypes=(("Archivos *.jpg", "*.jpg"), ("todos los archivos", "*.*")))
+            if nombrearch != '':
+                lblImagen =nombrearch+".jpg"
+                cv2.imwrite(lblImagen, captura)
+                imagen=lblImagen
+                mb.showinfo("Información", "¡La imagen se guardó correctamente!")
+                pImagenTK(lblImagen)
+                break
 
         #height,ancho=cv2.getWindowImageRect(captura)
 
@@ -114,16 +129,19 @@ def capturarImagen():
         cv2.line(captura,(int(alto/2)-longitud,int(ancho/2)),(int(alto/2)+longitud,int(ancho/2)),(0,0,255),1,1,1)
         # Línea vertical
         cv2.line(captura,(int(alto/2),int(ancho/2)-longitud),(int(alto/2),int(ancho/2)+longitud),(0,0,255),1,1,1)
+
+        cv2.rectangle(captura, puntoUno, puntoDos, colorRectangulo, 2, 1, 1)
+
         # Línea de referencia
-        cv2.line(captura, (int(alto / 3)+int(alto / 2), int(ancho / 1.3) - longitud), (int(alto / 3)+int(alto / 2), int(ancho / 3.2) + longitud),
-                 (255,0 , 0), 1, 1, 1)
-        cv2.line(captura, (int(alto / 3) + int(alto / 2), calibracion2mmP1 - longitud),
-                 (int(alto / 3) + int(alto / 2), calibracion2mmP2 + longitud),
-                 (128, 0, 0), 1, 1, 1)
+       # cv2.line(captura, (int(alto / 3)+int(alto / 2), int(ancho / 1.3) - longitud), (int(alto / 3)+int(alto / 2), int(ancho / 3.2) + longitud),
+        #         (255,0 , 0), 1, 1, 1)
+        #cv2.line(captura, (int(alto / 3) + int(alto / 2), calibracion2mmP1 - longitud),
+        #         (int(alto / 3) + int(alto / 2), calibracion2mmP2 + longitud),
+        #         (128, 0, 0), 1, 1, 1)
                 #cv2.circle(captura,(300,240),100,(127,127,127),8)
         #cImagenTK(captura)
 
-        cv2.imshow("foto", captura)
+        cv2.imshow("Presione x para capturar", captura)
        # btnAbrir = Button(img, text="Abrir", width=10, command=abrirArchivo)
         #btnAbrir.grid(column=0, row=0, padx=3, pady=5)
         #lblIma.configure(image=resolucion)
@@ -135,6 +153,9 @@ def capturarImagen():
         #cv2.createButton("Back",back,None,cv2.QT_PUSH_BUTTON,0)
 
     video.release()
+    cv2.destroyWindow("Presione x para capturar")
+    tiempoCaptura=time()-tiempoCaptura
+
 
 #Convierte el formato opencv a TK por medio de un path
 def pImagenTK(uImg):
@@ -146,8 +167,8 @@ def pImagenTK(uImg):
     lblImagen = Label(img)
     lblImagen.configure(image=tImagen)
     lblImagen.image=tImagen
-    #lblImagen.pack(side="left")
-    lblImagen.grid(column=0, row=1)
+    lblImagen.pack(side="left")
+        #lblImagen.grid(column=0, row=1)
 
     #pic=Label(img)
     #pic.image=tImagen
@@ -155,8 +176,12 @@ def pImagenTK(uImg):
 
 def abrirArchivo():
     global imagen
-    imagen=filedialog.askopenfilename(initialdir=os.getcwd(), title="Seleccione la imagen", filetypes=(("Archivos jpg", "*.jpg"), ("Todos los archivos", "*.*")))
-    pImagenTK(imagen)
+    imagen=filedialog.askopenfilename(initialdir=os.getcwd()+"/Prueba", title="Seleccione la imagen", filetypes=(("Archivos jpg", "*.jpg"), ("Todos los archivos", "*.*")))
+    if imagen != '':
+        pImagenTK(imagen)
+    else:
+        mb.showinfo("Información", "¡No ha seleccionado archivo!")
+
 
 def obtenerNArchivo():
     ref = os.path.split(imagen)
@@ -187,8 +212,28 @@ def dibujarLineas(tltrX, tltrY,blbrX, blbrY,tlblX, tlblY, trbrX, trbrY, unaImage
     cv2.line(unaImagen, (int(tlblX), int(tlblY)), (int(trbrX), int(trbrY)),
              (255, 0, 255), 2)
     return unaImagen
+def sel():
+   selection = "You selected the option " + str(var.get())
+   labx.config(text = selection)
+def opciones():
+    op=Toplevel(root)
+    op.title("Tipo de cable")
+    op.geometry("240x320")
+    var = IntVar()
+    
+    R1 = Radiobutton(op, text="TW", variable=var, value=1, command=sel)
+    R1.pack(side="left")
+    R2 = Radiobutton(op, text="THW", variable=var, value=2, command=sel)
+    R2.pack(side="left")
+    R3 = Radiobutton(op, text="Option 3", variable=var, value=3, command=sel)
+    R3.pack(side="left")
+    labx = Label(op)
+    root.update()
 
 def procesarImagen():
+    global tiempoProcesamiento
+    opciones()
+    tiempoProcesamiento=time()
     miImagen = cv2.imread(imagen)
     ubicacionX=int(alto / 6)
     ubicacionY=int(ancho/10)
@@ -210,7 +255,7 @@ def procesarImagen():
 
     imBorde = cv2.Canny(imGris, 50, 100)
 
-    # cv2.imshow("Imagen Canny",imBorde)
+    #cv2.imshow("Imagen Canny",imBorde)
 
     imBorde = cv2.dilate(imBorde, None, iterations=1)
     #cv2.imshow("Imagen dilate", imBorde)
@@ -230,12 +275,13 @@ def procesarImagen():
     orig = miImagen.copy()
     orig2= miImagen.copy()
     colLong1=(0, 50, 0)
-    colText1=(120,0,120)
+    colText1=(125,250,250)
     iteraciones=0
     iteraciones2=0
     ultimodimA=0
     ultimodimB=0
-    listaDeResultados=[0,0,0,0,0,0]
+    LMuestra=1.1
+    listaDeResultados=[0]*50
     for c in cnts:
         iteraciones=iteraciones+1
         #Si el area es pequeña no se considera
@@ -249,9 +295,10 @@ def procesarImagen():
         box = np.array(box, dtype="int")
 
         box = perspective.order_points(box)
-        #cv2.drawContours(orig, [box.astype("int")], -1, colLong1, 2)
+        #Se dibujan rectangulos alrededor de las imagenes de interes
+        cv2.drawContours(orig, [box.astype("int")], -1, colLong1, 2)
         #Se guarda la imagen
-        #cv2.imshow("puntos de imagen", orig)
+        #cv2.imshow("imagen artificial", orig)
         ref2 = './Resultados/ref2'+obtenerNArchivo()
         cv2.imwrite(ref2,orig)
         #cv2.imwrite(ref2, cv2.drawContours(orig, [box.astype("int")], -1, (0, 128, 255), 2))
@@ -262,7 +309,7 @@ def procesarImagen():
         (tl, tr, br, bl) = box
         (tltrX, tltrY) = puntoMedio(tl, tr)
         (blbrX, blbrY) = puntoMedio(bl, br)
-        #Se calculan los puntos medion de arriba a abajo y de arriba a derecha
+        #Se calculan los puntos medio de arriba a abajo y de arriba a derecha
 
         (tlblX, tlblY) = puntoMedio(tl, bl)
         (trbrX, trbrY) = puntoMedio(tr, br)
@@ -278,7 +325,7 @@ def procesarImagen():
 
         # Se le asigna la muestra
         if pixelsPerMetric is None:
-            pixelsPerMetric = dB / 2
+            pixelsPerMetric = dB / LMuestra
 
         # compute the size of the object
         dimA =truncate(dA / pixelsPerMetric,1)
@@ -320,8 +367,11 @@ def procesarImagen():
     #cv2.imshow("puntos de imagen Final", orig)
     cv2.imshow("Puntos de imagen final ",orig2)
     listaDeRes=sorted(listaDeResultados,reverse= True)
-    #print(listaDeRes)
+    print(listaDeRes)
+    tiempoProcesamiento = time() - tiempoProcesamiento
+    print(tiempoProcesamiento)
     construirPDF(listaDeRes)
+
 
 def retirarExtension(archivoI):
     arc = archivoI.split(sep=".", maxsplit=2)
@@ -364,14 +414,17 @@ def construirPDF(Mimg):
     HMaxima =  "Grosor máximo:   "
     DMinima =  "Diámetro mínimo: "
     DMaximo =  "Diámetro máximo: "
+    tCaptura="Tiempo de captura: "
+    tProcesamiento="Tiempo de procesamiento: "
     wImagen=440
     hImagen=320
     x0=50
     x1=(anchoCarta-len(Titulo))/2
     x3=300
     y1=50
+    y2=250
     TxtSeparacion=30
-
+    dk=0
     nimagen =retirarExtension(obtenerNArchivo())
     if (nimagen[0]!="#"):
         HMi=0.0
@@ -379,7 +432,9 @@ def construirPDF(Mimg):
         DMi=0.0
         DMa=0.0
     else:
+        print(nimagen[7:10])
         HMi=float(nimagen[7:10])/100
+
         HMa=float(nimagen[3:6])/100
         DMi=float(nimagen[15:18])/100
         DMa=float(nimagen[11:14])/100
@@ -399,7 +454,7 @@ def construirPDF(Mimg):
     documento.drawString(x1, altoCarta-y1, Titulo)
 
     documento.drawImage(os.getcwd()+"/Resultados/Final"+ obtenerNArchivo(),(anchoCarta-wImagen)/2,altoCarta-wImagen,width=wImagen,height=hImagen)
-    print(Mimg)
+    #print(Mimg)
 
     # Reporte de la parte calculada
     documento.drawString(x0, altoCarta - y1 - wImagen - TxtSeparacion, Mcalculado)
@@ -415,12 +470,21 @@ def construirPDF(Mimg):
     documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*3, HMaxima+str(HMa)+" mm")
     documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*4, DMinima+str(DMi)+" mm")
     documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*5, DMaximo+str(DMa)+" mm")
+
+    # Tiempo de procesamiento y captura
+
+    documento.drawString(x0, altoCarta-y2-wImagen-TxtSeparacion*1, tCaptura+"{:.2f} segundos".format(tiempoCaptura))
+    documento.drawString(x0, altoCarta-y2-wImagen-TxtSeparacion*2, tProcesamiento+"{:.2f} segundos".format(tiempoProcesamiento))
+
     #Salva el documento
     documento.showPage()
     documento.save()
 
     #abrir el navegador
    # webbrowser.open_new(doc)
+def cerrarTodo():
+    cv2.destroyAllWindows()
+
 
 def construirEntorno():
     menu = Menu(root)
@@ -432,6 +496,7 @@ def construirEntorno():
     menu.add_cascade(label='Archivo', menu=amenu)
     amenu.add_command(label='Capturar...',command=capturarImagen)
     amenu.add_command(label='Abrir...', command=abrirArchivo)
+    amenu.add_command(label='Cerrar todo', command=cerrarTodo)
     amenu.add_separator()
     amenu.add_command(label='Salir', command=root.quit)
     procesarmenu = Menu(menu)
