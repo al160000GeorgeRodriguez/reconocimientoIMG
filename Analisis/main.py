@@ -212,23 +212,69 @@ def dibujarLineas(tltrX, tltrY,blbrX, blbrY,tlblX, tlblY, trbrX, trbrY, unaImage
     cv2.line(unaImagen, (int(tlblX), int(tlblY)), (int(trbrX), int(trbrY)),
              (255, 0, 255), 2)
     return unaImagen
-def sel():
-   selection = "You selected the option " + str(var.get())
-   labx.config(text = selection)
+global tituloCable
+tituloCable="TW"
+calibreCable="14"
+def sel1():
+    global tituloCable
+    tituloCable="TW"
+
+
+def sel2():
+    global tituloCable
+    tituloCable="THW"
+
+def sel3():
+    global calibreCable
+    calibreCable="14"
+
+def sel4():
+    global calibreCable
+    calibreCable="12"
+
+global continuar
+continuar=FALSE
+def seguir():
+    global continuar
+    continuar=TRUE
+
+
 def opciones():
-    op=Toplevel(root)
+    #Selecciona el perfil adecuado del cable
+    global continuar
+    global tituloCable
+    global calibreCable
+    op = Toplevel(root)
     op.title("Tipo de cable")
-    op.geometry("240x320")
+    op.geometry("200x120")
     var = IntVar()
-    
-    R1 = Radiobutton(op, text="TW", variable=var, value=1, command=sel)
-    R1.pack(side="left")
-    R2 = Radiobutton(op, text="THW", variable=var, value=2, command=sel)
-    R2.pack(side="left")
-    R3 = Radiobutton(op, text="Option 3", variable=var, value=3, command=sel)
-    R3.pack(side="left")
+    var2 = IntVar()
+    var.set(1)
+    var2.set(1)
+    tituloCable = "TW"
+    calibreCable = "14"
+    R1 = Radiobutton(op, text="TW         ", variable=var, value=1, command=sel1)
+    R2 = Radiobutton(op, text="THW        ", variable=var, value=2, command=sel2)
+    B1 = Button(op,text="  Ok  ",command=seguir)
+    R3 = Radiobutton(op, text="Calibre 14", variable=var2, value=1, command=sel3)
+    R4 = Radiobutton(op, text="Calibre 12", variable=var2, value=2, command=sel4)
+
+    R1.grid(column=0,row=0)
+    R2.grid(column=1, row=0)
+    R3.grid(column=0,row=1)
+    R4.grid(column=1, row=1)
+    B1.grid(column=1, row=2)
     labx = Label(op)
     root.update()
+    while TRUE:
+        root.update()
+        if continuar:
+            op.destroy()
+            continuar = FALSE
+            break
+
+
+
 
 def procesarImagen():
     global tiempoProcesamiento
@@ -380,7 +426,7 @@ def retirarExtension(archivoI):
 #Tamaño carta
 global anchoCarta,altoCarta,Titulo, Mreal,Mcalculado,HMinima,HMaxima,DMinima,DMaximo,wImagen,hImagen,x0,x1,x3,y1, TxtSeparacion
 anchoCarta,altoCarta=letter
-Titulo="Reporte"
+Titulo="Reporte cable THW calibre 14 AWG"
 Mreal="Medida real"
 Mcalculado="Medida cálculado "
 HMinima=   "Grosor mínimo:   "
@@ -405,21 +451,22 @@ def construirCanva():
 
 
 def construirPDF(Mimg):
+    #global tituloCable
     #Tamaño carta
     anchoCarta,altoCarta=letter
-    Titulo="Reporte"
+    Titulo="Reporte cable "+tituloCable+" calibre "+calibreCable+" AWG"
     Mreal="Medida real"
     Mcalculado="Medida cálculado "
     HMinima=   "Grosor mínimo:   "
     HMaxima =  "Grosor máximo:   "
-    DMinima =  "Diámetro mínimo: "
-    DMaximo =  "Diámetro máximo: "
+    DMinima =  "Diámetro promedio: "
+    #DMaximo =  "Diámetro máximo: "
     tCaptura="Tiempo de captura: "
     tProcesamiento="Tiempo de procesamiento: "
     wImagen=440
     hImagen=320
     x0=50
-    x1=(anchoCarta-len(Titulo))/2
+    x1=int(anchoCarta/2-len(Titulo)/2)-60
     x3=300
     y1=50
     y2=250
@@ -436,11 +483,14 @@ def construirPDF(Mimg):
         HMi=float(nimagen[7:10])/100
 
         HMa=float(nimagen[3:6])/100
-        DMi=float(nimagen[15:18])/100
+
+        DMi=(float(nimagen[15:18])+float(nimagen[11:14]))/200
         DMa=float(nimagen[11:14])/100
 
     HMiX=(Mimg[0]-Mimg[1])/2
     HMaX=(Mimg[0]-Mimg[2])/2
+    if (HMiX < 0.4):
+        HMiX = HMaX
     DMiX=Mimg[0]
     DMaX=Mimg[0]
 
@@ -461,7 +511,7 @@ def construirPDF(Mimg):
     documento.drawString(x0, altoCarta-y1-wImagen-TxtSeparacion*2, HMinima+"{:.1f} mm".format(HMiX))
     documento.drawString(x0, altoCarta-y1-wImagen-TxtSeparacion*3, HMaxima+"{:.1f} mm".format(HMaX))
     documento.drawString(x0, altoCarta-y1-wImagen-TxtSeparacion*4, DMinima+str(DMiX)+" mm")
-    documento.drawString(x0, altoCarta-y1-wImagen-TxtSeparacion*5, DMaximo+str(DMaX)+" mm")
+    #documento.drawString(x0, altoCarta-y1-wImagen-TxtSeparacion*5, DMaximo+str(DMaX)+" mm")
 
     #Reporte de la medida de comparación
 
@@ -469,7 +519,7 @@ def construirPDF(Mimg):
     documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*2, HMinima+str(HMi)+" mm")
     documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*3, HMaxima+str(HMa)+" mm")
     documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*4, DMinima+str(DMi)+" mm")
-    documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*5, DMaximo+str(DMa)+" mm")
+    #documento.drawString(x3, altoCarta-y1-wImagen-TxtSeparacion*5, DMaximo+str(DMa)+" mm")
 
     # Tiempo de procesamiento y captura
 
